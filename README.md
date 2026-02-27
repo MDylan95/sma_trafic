@@ -1,19 +1,20 @@
-# 🚦 Système Multi-Agent de Régulation du Trafic
+# 🚦 Système Multi-Agent de Régulation du Trafic Urbain - Abidjan
 
-Projet de simulation décentralisée pour réduire les embouteillages dans une zone urbaine dense (Abidjan) utilisant l'architecture BDI (Belief-Desire-Intention) et les systèmes multi-agents.
+Simulation multi-agent avancée du trafic urbain d'Abidjan (Côte d'Ivoire) utilisant l'architecture BDI (Belief-Desire-Intention), le réseau routier réel OpenStreetMap, et l'intégration SUMO pour une visualisation microscopique en temps réel.
 
 ## 📋 Vue d'ensemble
 
-Ce projet implémente un système intelligent et décentralisé pour gérer le trafic urbain où la décision est prise par l'interaction entre des entités autonomes (agents) plutôt que par un serveur central.
+Ce projet implémente un système intelligent et décentralisé pour gérer le trafic urbain d'Abidjan, où les décisions sont prises par l'interaction entre des agents autonomes (véhicules, intersections, gestionnaire de crise) plutôt que par un contrôle centralisé.
 
 ### Caractéristiques principales
 
-- ✅ **Architecture BDI** pour tous les agents
-- ✅ **Communication FIPA-ACL** standardisée
-- ✅ **Algorithmes de routage** (A* et Dijkstra)
-- ✅ **Optimisation des feux** (Q-Learning et Max-Pressure)
-- ✅ **Scénarios réalistes** d'Abidjan
-- ✅ **Coordination décentralisée** (ondes vertes)
+- ✅ **Réseau routier réel** : Données OpenStreetMap d'Abidjan (~5000 edges)
+- ✅ **Intégration SUMO** : Visualisation microscopique via TraCI
+- ✅ **Architecture BDI** : Agents autonomes avec croyances, désirs, intentions
+- ✅ **Communication FIPA-ACL** : Messages standardisés inter-agents
+- ✅ **Scénarios réalistes** : Heures de pointe (Yopougon/Abobo → Plateau), incidents (Pont De Gaulle)
+- ✅ **Base de données PostgreSQL** : Stockage et analyse des KPIs
+- ✅ **Optimisations performance** : 300+ véhicules simultanés, 0.3s/step
 
 ## 🏗️ Architecture du Projet
 
@@ -49,13 +50,15 @@ traffic_sma_project/
 │   ├── logs/                       # Logs de simulation
 │   └── results/                    # Résultats et statistiques
 │
-├── sumo/                            # Intégration SUMO (visualisation temps réel)
-│   ├── generate_network.py          # Génération du réseau SUMO (grille 6×6)
+├── sumo_integration/                # Intégration SUMO (visualisation temps réel)
 │   ├── sumo_connector.py            # Connecteur TraCI Mesa ↔ SUMO
-│   ├── abidjan.sumocfg              # Configuration SUMO
-│   ├── abidjan.net.xml              # Réseau routier compilé
-│   ├── vtypes.add.xml               # Types de véhicules (standard, ambulance, bus...)
-│   └── gui_settings.xml             # Paramètres d'affichage SUMO-GUI
+│   ├── abidjan_real.net.xml         # Réseau routier OSM Abidjan (~5000 edges)
+│   ├── abidjan_real.osm.xml         # Données OpenStreetMap brutes
+│   ├── abidjan_real.sumocfg         # Configuration SUMO
+│   ├── real_network_constants.py    # Constantes géographiques (Pont De Gaulle, HKB, zones)
+│   ├── vtypes.add.xml               # Types de véhicules (standard, ambulance, bus SOTRA)
+│   ├── gui_settings.xml             # Paramètres d'affichage SUMO-GUI
+│   └── import_real_abidjan.py       # Script d'import OSM → SUMO
 │
 ├── tests/                           # Tests unitaires
 │   └── test_agents.py              # Tests agents, communication, routage, scénarios
@@ -65,6 +68,13 @@ traffic_sma_project/
 ├── setup_database.py                # Script d'initialisation PostgreSQL
 ├── analyze_database.py              # Analyse interactive des simulations
 ├── main.py                          # Point d'entrée principal
+│
+├── MEMOIRE_TECHNIQUE_ARCHITECTURE_SMA.md  # Mémoire technique complet (67 pages)
+├── RAPPORT_CONFORMITE_CAHIER_DES_CHARGES.md  # Rapport de conformité
+├── DOCUMENTATION_SCENARIOS_TEST.md  # Documentation des scénarios
+├── OPTIMISATIONS_PERFORMANCE.md     # Optimisations appliquées
+├── POSTGRESQL_GUIDE.md              # Guide PostgreSQL
+├── TESTING_GUIDE.md                 # Guide de test
 └── README.md                        # Ce fichier
 ```
 
@@ -124,18 +134,37 @@ traffic_sma_project/
 ## 🚀 Installation
 
 ### Prérequis
-- Python 3.8+
+- Python 3.10+
+- SUMO 1.15.0+ (avec SUMO-GUI)
+- PostgreSQL 14+ (optionnel, pour sauvegarde des KPIs)
 - pip
 
-### Installation des dépendances
+### Installation
 
 ```bash
-# Cloner le projet
-git clone <votre-repo>
-cd traffic_sma_project
+# 1. Cloner le projet
+git clone https://github.com/MDylan95/sma_trafic.git
+cd sma_trafic
 
-# Installer les dépendances
+# 2. Créer un environnement virtuel
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+.venv\Scripts\activate     # Windows
+
+# 3. Installer les dépendances Python
 pip install -r requirements.txt
+
+# 4. Installer SUMO (si pas déjà installé)
+# Ubuntu/Debian
+sudo apt-get install sumo sumo-tools sumo-gui
+
+# macOS
+brew install sumo
+
+# Windows: Télécharger depuis https://sumo.dlr.de/docs/Downloads.php
+
+# 5. Configurer PostgreSQL (optionnel)
+python setup_database.py
 ```
 
 ## ▶️ Utilisation
@@ -143,46 +172,49 @@ pip install -r requirements.txt
 ### Lancement de la simulation
 
 ```bash
-# Simulation basique
-python main.py
+# Simulation basique (sans visualisation)
+python main.py --steps 500
 
-# Avec graphiques statiques (KPIs, heatmap, réseau)
-python main.py --visualize
+# Avec SUMO-GUI (visualisation temps réel sur réseau OSM Abidjan)
+python main.py --sumo --sumo-interactive --steps 1000
 
-# Avec SUMO-GUI (véhicules en mouvement en temps réel)
-python main.py --sumo
+# Scénario heure de pointe (Yopougon/Abobo → Plateau)
+python main.py --sumo --sumo-interactive --scenario rush_hour --steps 1000
 
-# SUMO + graphiques + 500 pas
-python main.py --sumo --visualize --steps 500
+# Scénario incident (Pont De Gaulle bloqué → redirection Pont HKB)
+python main.py --sumo --sumo-interactive --scenario incident --steps 1800
 
 # Mode test rapide (100 pas)
-python main.py --test --sumo
+python main.py --test --steps 100
 
-# Scénario spécifique
-python main.py --scenario rush_hour
+# Avec sauvegarde PostgreSQL
+python main.py --sumo --database --steps 1000
 
 # Avec configuration personnalisée
 python main.py --config custom_config.yaml
 ```
 
-### Visualisation SUMO (véhicules en mouvement)
+### Visualisation SUMO (réseau réel OSM Abidjan)
 
-Le projet intègre **SUMO** (Simulation of Urban MObility) via **TraCI** pour visualiser les véhicules en temps réel :
+Le projet intègre **SUMO** (Simulation of Urban MObility) via **TraCI** pour visualiser les véhicules sur le réseau routier réel d'Abidjan :
 
 ```bash
-# 1. Générer le réseau SUMO (une seule fois)
-python sumo/generate_network.py
-
-# 2. Lancer la simulation avec SUMO-GUI
-python main.py --sumo --steps 500
+# Lancer la simulation avec SUMO-GUI
+python main.py --sumo --sumo-interactive --scenario rush_hour --steps 1000
 ```
 
-SUMO-GUI affiche :
+**SUMO-GUI affiche :**
+- 🗺️ **Réseau routier réel** : OpenStreetMap d'Abidjan (~5000 edges)
+- 🌉 **Infrastructures critiques** : Pont De Gaulle, Pont HKB
+- 🏘️ **Zones géographiques** : Yopougon, Abobo, Plateau, Cocody, Treichville
 - 🚗 **Véhicules** en mouvement (bleu = standard, rouge = ambulance, vert = bus SOTRA)
-- 🚦 **Feux de circulation** contrôlés par les agents Mesa (Q-Learning / Max-Pressure)
-- 🗺️ **Réseau routier** en grille 6×6 (36 intersections, zone 2.5km × 2.5km)
+- 🚦 **Feux de circulation** contrôlés par les agents Mesa
+- 🚨 **Incidents** visualisés (polygone rouge sur pont bloqué)
 
-Les décisions des agents Mesa (feux, routage) sont synchronisées en temps réel avec SUMO via TraCI.
+**Synchronisation Mesa ↔ SUMO :**
+- Les agents Mesa créent des véhicules avec coordonnées GPS (lon, lat)
+- SUMO Connector convertit GPS → edges SUMO via `find_edge_near_coords()`
+- Les décisions des agents (feux, routage) sont appliquées en temps réel dans SUMO via TraCI
 
 ### Configuration
 
@@ -248,27 +280,79 @@ Voir le [Guide PostgreSQL](POSTGRESQL_GUIDE.md) pour plus de détails.
 
 ## 📊 Scénarios de Test
 
-### 1. Heure de pointe matinale
-**Description**: Flux massif Yopougon/Abobo → Plateau
+### 1. Scénario Rush Hour (Heure de Pointe)
+**Description**: Simulation du flux massif matinal Yopougon/Abobo → Plateau
 
-**Configuration**:
+**Configuration** (`config.yaml`):
 ```yaml
 scenarios:
   rush_hour_morning:
-    start_time: 0
-    duration: 3600
-    vehicle_generation_rate: 0.5  # véhicules/sec
+    name: "Heure de pointe matinale"
+    origin_zones:
+      - name: "Yopougon"
+        weight: 0.5
+        bbox: [-4.070, 5.320, -4.010, 5.380]  # Coordonnées GPS
+      - name: "Abobo"
+        weight: 0.5
+        bbox: [-4.030, 5.410, -3.970, 5.470]
+    destination_zones:
+      - name: "Plateau"
+        weight: 1.0
+        bbox: [-4.020, 5.300, -3.970, 5.360]
+    vehicle_generation_rate: 2.0  # véhicules/seconde
+    use_real_coords: true  # Utiliser coordonnées GPS réelles
+```
+
+**Lancement**:
+```bash
+python main.py --sumo --sumo-interactive --scenario rush_hour --steps 1000
 ```
 
 **KPIs mesurés**:
-- Temps de trajet moyen
-- Longueur des files d'attente
-- Niveau de congestion
+- Temps de trajet moyen (Yopougon/Abobo → Plateau)
+- Longueur des files d'attente aux carrefours
+- Congestion sur Pont De Gaulle et Pont HKB
+- Nombre de messages FIPA-ACL échangés
 
-### 2. Incident localisé
-**Description**: Panne sur Pont De Gaulle → redirection vers Pont HKB
+---
 
-**Objectif**: Tester la capacité du système à s'adapter dynamiquement
+### 2. Scénario Incident (Pont De Gaulle Bloqué)
+**Description**: Panne de véhicule bloquant le Pont De Gaulle → redirection automatique vers Pont HKB
+
+**Configuration** (`config.yaml`):
+```yaml
+scenarios:
+  incident_bridge:
+    name: "Incident Pont De Gaulle"
+    start_time: 300      # Déclenchement après 5 minutes
+    duration: 120        # Durée de l'incident : 2 minutes
+    blocked_road:
+      name: "Pont De Gaulle"
+      edges: ["edge_id_1", "edge_id_2"]  # Edges SUMO réels
+    alternative_road:
+      name: "Pont HKB"
+      edges: ["edge_id_3", "edge_id_4"]
+```
+
+**Lancement**:
+```bash
+python main.py --sumo --sumo-interactive --scenario incident --steps 1800
+```
+
+**Déroulement**:
+1. **Phase 1 (0-300s)** : Trafic normal
+2. **Phase 2 (300s)** : Déclenchement incident → Pont De Gaulle bloqué (polygone rouge dans SUMO)
+3. **Phase 3 (300-420s)** : Véhicules re-routés vers Pont HKB, diffusion messages FIPA-ACL
+4. **Phase 4 (420s)** : Résolution incident → Pont De Gaulle restauré
+5. **Phase 5 (420s+)** : Retour à la normale
+
+**KPIs mesurés**:
+- Temps de réaction du système (détection → redirection)
+- Augmentation du trafic sur Pont HKB pendant l'incident
+- Temps de trajet moyen avant/pendant/après incident
+- Nombre de véhicules re-routés
+
+**Objectif**: Valider la capacité du système à s'adapter dynamiquement aux incidents
 
 ## 📈 Indicateurs de Performance (KPIs)
 
@@ -444,7 +528,7 @@ Ce projet est sous licence MIT.
 
 ## ✨ Auteurs
 
-- Votre Nom - *Développement initial*
+- **Mac-Dylan KACOU** ([@MDylan95](https://github.com/MDylan95)) - *Développement initial*
 
 ## 🙏 Remerciements
 
@@ -454,9 +538,28 @@ Ce projet est sous licence MIT.
 
 ## 📞 Contact
 
-- Email: votre.email@example.com
-- GitHub: [@votre-username](https://github.com/votre-username)
+- Email: macdylankacou2000@gmail.com
+- GitHub: [@MDylan95](https://github.com/MDylan95)
+- Repository: [sma_trafic](https://github.com/MDylan95/sma_trafic)
 
 ---
 
-**Note**: Ce projet a été développé dans le cadre d'un projet académique sur les systèmes multi-agents appliqués à la régulation du trafic urbain.
+**Note**: Ce projet a été développé dans le cadre d'un projet académique sur les systèmes multi-agents appliqués à la régulation du trafic urbain à Abidjan, Côte d'Ivoire.
+
+## 📚 Documentation Complète
+
+- **[Mémoire Technique](MEMOIRE_TECHNIQUE_ARCHITECTURE_SMA.md)** - Justification des choix d'architecture SMA (67 pages)
+- **[Rapport de Conformité](RAPPORT_CONFORMITE_CAHIER_DES_CHARGES.md)** - Conformité au cahier des charges
+- **[Documentation Scénarios](DOCUMENTATION_SCENARIOS_TEST.md)** - Guide des scénarios de test
+- **[Optimisations Performance](OPTIMISATIONS_PERFORMANCE.md)** - Optimisations appliquées (62% amélioration)
+- **[Guide PostgreSQL](POSTGRESQL_GUIDE.md)** - Configuration et utilisation de la base de données
+- **[Guide de Test](TESTING_GUIDE.md)** - Procédures de test et validation
+
+## 🎯 Résultats Clés
+
+- ✅ **300+ véhicules** simultanés sur réseau OSM réel
+- ✅ **0.3s/step** après optimisations (62% amélioration)
+- ✅ **~5000 edges** du réseau routier d'Abidjan
+- ✅ **Scénarios validés** : Rush hour, Incident Pont De Gaulle
+- ✅ **KPIs en temps réel** sauvegardés dans PostgreSQL
+- ✅ **Visualisation SUMO** synchronisée avec agents Mesa
