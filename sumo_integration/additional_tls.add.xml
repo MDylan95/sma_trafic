@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Feux de circulation additionnels pour le réseau OSM d'Abidjan -->
+<!-- Générés automatiquement par analyse des jonctions stratégiques -->
+
+<additional>
+    <!-- Jonction: cluster_10543441380_11380843876_11380843877_3314755115 | Degré: 10 | Score: 200 -->
+    <tlLogic id="cluster_10543441380_11380843876_11380843877_3314755115" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: 3249584729 | Degré: 9 | Score: 190 -->
+    <tlLogic id="3249584729" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: 243775494 | Degré: 8 | Score: 180 -->
+    <tlLogic id="243775494" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: 243755450 | Degré: 8 | Score: 180 -->
+    <tlLogic id="243755450" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: 243755440 | Degré: 8 | Score: 180 -->
+    <tlLogic id="243755440" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: 244524066 | Degré: 8 | Score: 180 -->
+    <tlLogic id="244524066" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: 244524062 | Degré: 8 | Score: 180 -->
+    <tlLogic id="244524062" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: 243755456 | Degré: 8 | Score: 180 -->
+    <tlLogic id="243755456" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: 768698159 | Degré: 8 | Score: 180 -->
+    <tlLogic id="768698159" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: cluster_1048638815_845989006 | Degré: 8 | Score: 180 -->
+    <tlLogic id="cluster_1048638815_845989006" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: 1044926208 | Degré: 8 | Score: 180 -->
+    <tlLogic id="1044926208" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: cluster_1044926201_1048212153 | Degré: 8 | Score: 180 -->
+    <tlLogic id="cluster_1044926201_1048212153" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: cluster_1044926050_1048211926 | Degré: 8 | Score: 180 -->
+    <tlLogic id="cluster_1044926050_1048211926" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: 8751264277 | Degré: 8 | Score: 180 -->
+    <tlLogic id="8751264277" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: cluster_243531479_3328676533_6048860328_6057179010_#2more | Degré: 8 | Score: 180 -->
+    <tlLogic id="cluster_243531479_3328676533_6048860328_6057179010_#2more" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: 1044925990 | Degré: 8 | Score: 180 -->
+    <tlLogic id="1044925990" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: 338503981 | Degré: 8 | Score: 180 -->
+    <tlLogic id="338503981" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: 244524120 | Degré: 8 | Score: 180 -->
+    <tlLogic id="244524120" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: 244524082 | Degré: 8 | Score: 180 -->
+    <tlLogic id="244524082" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: 244524080 | Degré: 8 | Score: 180 -->
+    <tlLogic id="244524080" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: 3438395652 | Degré: 8 | Score: 180 -->
+    <tlLogic id="3438395652" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: 244525125 | Degré: 8 | Score: 180 -->
+    <tlLogic id="244525125" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: cluster_244523969_3363334138 | Degré: 8 | Score: 180 -->
+    <tlLogic id="cluster_244523969_3363334138" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: cluster_243755466_2472448773_3363334100 | Degré: 8 | Score: 180 -->
+    <tlLogic id="cluster_243755466_2472448773_3363334100" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: 4786536355 | Degré: 8 | Score: 180 -->
+    <tlLogic id="4786536355" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: cluster_1046531274_3321996602_6048916095 | Degré: 8 | Score: 180 -->
+    <tlLogic id="cluster_1046531274_3321996602_6048916095" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: cluster_244510516_244510570_6064202658_6064202660 | Degré: 8 | Score: 180 -->
+    <tlLogic id="cluster_244510516_244510570_6064202658_6064202660" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: cluster_1045535128_338377252_6046987362_6046987363 | Degré: 8 | Score: 180 -->
+    <tlLogic id="cluster_1045535128_338377252_6046987362_6046987363" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: cluster_243771068_2991182337 | Degré: 7 | Score: 170 -->
+    <tlLogic id="cluster_243771068_2991182337" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+    <!-- Jonction: 243757477 | Degré: 6 | Score: 160 -->
+    <tlLogic id="243757477" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGGGrrrrGGGGrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrGGGG"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+    </tlLogic>
+
+</additional>

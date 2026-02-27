@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<viewsettings>
+    <scheme name="real world">
+        <opengl antialiase="1" dither="0"/>
+        <background backgroundColor="100,200,100" showGrid="0"/>
+        <edges laneEdgeMode="0" scaleMode="0" laneShowBorders="1"
+               showLinkDecals="1" showLinkRules="1" showRails="0" hideConnectors="0"
+               widthExaggeration="1.00" minSize="1.00"
+               edgeName_show="0" edgeName_size="50.00" edgeName_color="orange"
+               streetName_show="1" streetName_size="65.00" streetName_color="255,255,255">
+            <colorScheme name="uniform">
+                <entry color="0,0,0" name="road"/>
+            </colorScheme>
+        </edges>
+        <vehicles vehicleMode="0" vehicleQuality="2" vehicle_minSize="2.00"
+                  vehicle_exaggeration="1.50" showBlinker="1"
+                  vehicleName_show="0" vehicleName_size="50.00" vehicleName_color="204,153,0">
+            <colorScheme name="given vehicle/type/route color">
+                <entry color="yellow"/>
+            </colorScheme>
+        </vehicles>
+        <junctions junctionMode="0" drawLinkTLIndex="0" drawLinkJunctionIndex="0"
+                   junctionName_show="0" junctionName_size="50.00" junctionName_color="0,255,128"
+                   showLane2Lane="0" drawShape="1" junctionSize_exaggeration="1.0">
+            <colorScheme name="uniform">
+                <entry color="0,0,0"/>
+            </colorScheme>
+        </junctions>
+        <additionals addMode="0" add_minSize="1.00" add_exaggeration="1.00"
+                     addName_show="0" addName_size="50.00" addName_color="255,0,128"/>
+        <pois poi_minSize="2.00" poi_exaggeration="2.00"
+              poiName_show="0" poiName_size="50.00" poiName_color="255,0,128"/>
+        <legend showSizeLegend="0"/>
+    </scheme>
+    <!-- Centre du réseau OSM Abidjan : bbox (0,0)-(10653,10148) -->
+    <viewport x="5326" y="5074" zoom="2000"/>
+    <delay value="100"/>
+</viewsettings>

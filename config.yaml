@@ -1,0 +1,145 @@
+# Configuration du Système Multi-Agent de Régulation du Trafic
+# Paramètres de simulation spécifiques à Abidjan
+
+simulation:
+  # Durée de la simulation en secondes (1 heure = 3600s)
+  duration: 3600
+  # Pas de temps en secondes (augmenté pour performance)
+  time_step: 2
+  # Nombre de véhicules à générer (réduit pour performance acceptable)
+  # Note: 2000 véhicules = trop lourd pour temps réel, 300 = bon compromis
+  num_vehicles: 300
+  # Seed pour la reproductibilité
+  random_seed: 42
+
+environment:
+  # Dimensions de la grille (en mètres)
+  width: 5000
+  height: 5000
+  # Taille d'une cellule (en mètres)
+  cell_size: 10
+  
+intersection:
+  # Durée minimale d'un feu vert (secondes)
+  min_green_time: 15
+  # Durée maximale d'un feu vert (secondes)
+  max_green_time: 90
+  # Durée par défaut d'un feu vert
+  default_green_time: 30
+  # Durée du feu orange
+  yellow_time: 3
+  # Seuil de congestion (nombre de véhicules)
+  congestion_threshold: 10
+  # Rayon de perception (en mètres)
+  perception_radius: 200
+
+vehicle:
+  # Vitesse maximale (m/s) - 80 km/h = 22.22 m/s (circulation urbaine rapide)
+  max_speed: 22.22
+  # Vitesse minimale (m/s)
+  min_speed: 0
+  # Accélération maximale (m/s²) - augmentée pour démarrage plus rapide
+  max_acceleration: 3.5
+  # Décélération maximale (m/s²)
+  max_deceleration: 4.5
+  # Distance de sécurité (mètres)
+  safe_distance: 5.0
+  # Rayon de perception (mètres)
+  perception_radius: 100
+
+communication:
+  # Protocole utilisé
+  protocol: "FIPA-ACL"
+  # Rayon de diffusion des messages (mètres)
+  broadcast_radius: 500
+  # Délai de communication (secondes)
+  message_delay: 0.1
+  # Types de messages
+  message_types:
+    - "REQUEST"
+    - "INFORM"
+    - "PROPOSE"
+    - "ACCEPT"
+    - "REJECT"
+    - "QUERY"
+
+algorithms:
+  # Algorithme de routage
+  routing:
+    algorithm: "A_STAR"  # ou "DIJKSTRA"
+    recalculation_interval: 30  # secondes
+  
+  # Algorithme d'optimisation des feux
+  traffic_light:
+    algorithm: "Q_LEARNING"  # ou "MAX_PRESSURE"
+    learning_rate: 0.1
+    discount_factor: 0.9
+    epsilon: 0.1  # pour exploration vs exploitation
+    epsilon_decay: 0.995
+
+# Scénarios spécifiques à Abidjan
+scenarios:
+  rush_hour_morning:
+    name: "Heure de pointe matinale"
+    description: "Flux Yopougon/Abobo vers Plateau"
+    start_time: 0
+    duration: 3600
+    origin_zones:
+      - name: "Yopougon"
+        weight: 0.5
+        coordinates: [0, 2500]
+      - name: "Abobo"
+        weight: 0.5
+        coordinates: [2500, 5000]
+    destination_zones:
+      - name: "Plateau"
+        weight: 1.0
+        coordinates: [2500, 0]
+    vehicle_generation_rate: 2.0  # véhicules par seconde (heure de pointe intense)
+  
+  incident_bridge:
+    name: "Incident Pont De Gaulle"
+    description: "Panne véhicule sur Pont De Gaulle -> redirection Pont HKB"
+    start_time: 300  # après 5 minutes (pour tests rapides)
+    duration: 120  # 2 minutes d'incident
+    blocked_road:
+      name: "Pont De Gaulle"
+      coordinates: [[2000, 0], [2000, 4000]]
+    alternative_road:
+      name: "Pont HKB"
+      coordinates: [[3000, 0], [3000, 4000]]
+
+# KPIs à collecter
+kpis:
+  - "average_travel_time"
+  - "average_queue_length"
+  - "total_messages_exchanged"
+  - "average_speed"
+  - "congestion_level"
+  - "fuel_consumption"  # optionnel
+
+# Base de données
+database:
+  type: "postgresql"
+  postgresql:
+    host: "localhost"
+    port: 5432
+    database: "traffic_sma"
+    user: "postgres"
+    password: "1030"
+
+# Visualisation
+visualization:
+  enabled: true
+  update_interval: 1  # secondes
+  show_messages: true
+  show_routes: true
+  colormap: "viridis"
+  figure_size: [12, 10]
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "data/logs/simulation.log"
+  console: true
+  rotation: "10 MB"

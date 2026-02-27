@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/additional_file.xsd">
+    
+    <!-- Véhicule standard (bleu) -->
+    <vType id="standard" accel="2.0" decel="4.0" sigma="0.5" 
+           length="5" width="3" maxSpeed="13.89" color="0,100,255"
+           guiShape="passenger"/>
+    
+    <!-- Ambulance (rouge vif) -->
+    <vType id="ambulance" accel="3.0" decel="5.0" sigma="0.3" 
+           length="6" width="3" maxSpeed="22.22" color="255,0,0"
+           guiShape="emergency"/>
+    
+    <!-- Bus SOTRA (vert, plus long) -->
+    <vType id="bus_sotra" accel="1.5" decel="3.0" sigma="0.5" 
+           length="12" width="4" maxSpeed="11.11" color="0,200,0"
+           guiShape="bus"/>
+    
+    <!-- Pompier (orange) -->
+    <vType id="pompier" accel="2.5" decel="4.5" sigma="0.3" 
+           length="8" width="3" maxSpeed="19.44" color="255,100,0"
+           guiShape="firebrigade"/>
+    
+    <!-- Police (jaune) -->
+    <vType id="police" accel="3.0" decel="5.0" sigma="0.3" 
+           length="5" width="3" maxSpeed="22.22" color="255,255,0"
+           guiShape="police"/>
+    
+</additional>
