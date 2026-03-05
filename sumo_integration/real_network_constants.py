@@ -16,7 +16,8 @@ PONT_HKB_EDGES = ['1135493394#0', '118814739#0', '147061723#3', '22703950', '227
 
 # Zones géographiques (bbox en coordonnées GPS)
 # Format: (lon_min, lat_min, lon_max, lat_max)
-BBOX_YOPOUGON  = (-4.070, 5.320, -4.010, 5.380)   # Ouest - origine flux heure de pointe
-BBOX_ABOBO     = (-4.030, 5.410, -3.970, 5.470)   # Nord - origine flux heure de pointe
-BBOX_PLATEAU   = (-4.020, 5.300, -3.970, 5.360)   # Centre - zone d'affaires (CBD)
-BBOX_COCODY    = (-3.990, 5.330, -3.950, 5.420)   # Est - destination flux heure de pointe
+# BBOX recalibrées pour correspondre aux limites réelles du réseau OSM importé
+BBOX_YOPOUGON  = (-4.0595, 5.3450, -4.0114, 5.3634)   # Ouest - origine flux heure de pointe
+BBOX_ABOBO     = (-4.0500, 5.3634, -3.9500, 5.3909)   # Nord - origine flux heure de pointe
+BBOX_PLATEAU   = (-4.0400, 5.2991, -3.9800, 5.3450)   # Sud/Centre - zone d'affaires (CBD)
+BBOX_COCODY    = (-3.9900, 5.3300, -3.9500, 5.3909)   # Est - destination alternative
