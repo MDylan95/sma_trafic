@@ -677,10 +677,11 @@ class SumoConnector:
                 
                 try:
                     # Convertir les coins GPS en coordonnées SUMO
-                    x1, y1 = traci.simulation.convertGeo(bbox[0], bbox[1])  # Sud-Ouest
-                    x2, y2 = traci.simulation.convertGeo(bbox[2], bbox[3])  # Nord-Est
+                    # convertGeo(lon, lat, fromGeo=True) convertit GPS → XY SUMO
+                    x1, y1 = traci.simulation.convertGeo(bbox[0], bbox[1], fromGeo=True)  # Sud-Ouest
+                    x2, y2 = traci.simulation.convertGeo(bbox[2], bbox[3], fromGeo=True)  # Nord-Est
                     
-                    logger.debug(f"Zone {zone['name']}: GPS {bbox} → SUMO ({x1:.1f}, {y1:.1f}) - ({x2:.1f}, {y2:.1f})")
+                    logger.info(f"   Zone {zone['name']}: GPS ({bbox[0]:.4f},{bbox[1]:.4f})-({bbox[2]:.4f},{bbox[3]:.4f}) → SUMO ({x1:.0f},{y1:.0f})-({x2:.0f},{y2:.0f})")
                     
                     # Créer un polygone rectangulaire
                     shape = [
@@ -692,14 +693,14 @@ class SumoConnector:
                     
                     poly_id = f"zone_{zone['name'].lower()}"
                     
-                    # Ajouter le polygone
+                    # Ajouter le polygone avec un layer élevé pour être visible
                     traci.polygon.add(
                         polygonID=poly_id,
                         shape=shape,
                         color=zone['color'],
                         fill=True,
                         polygonType="zone",
-                        layer=0
+                        layer=100
                     )
                     
                     # Ajouter un POI (label) au centre

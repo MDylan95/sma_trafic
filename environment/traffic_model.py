@@ -253,8 +253,44 @@ class TrafficModel(Model):
             else:
                 vehicle_types.append("standard")
         
+        # Si SUMO est activé, utiliser les coordonnées GPS des zones d'Abidjan
+        use_gps = False
+        origin_zones = None
+        dest_zones = None
+        
+        if self.use_sumo:
+            try:
+                from sumo_integration.real_network_constants import BBOX_YOPOUGON, BBOX_ABOBO, BBOX_PLATEAU
+                use_gps = True
+                origin_zones = [
+                    {'name': 'Yopougon', 'weight': 0.5, 'bbox': BBOX_YOPOUGON},
+                    {'name': 'Abobo', 'weight': 0.5, 'bbox': BBOX_ABOBO}
+                ]
+                dest_zones = [
+                    {'name': 'Plateau', 'weight': 1.0, 'bbox': BBOX_PLATEAU}
+                ]
+            except ImportError:
+                use_gps = False
+        
         for i in range(num_vehicles):
-            self._create_vehicle(f"vehicle_{i}", vehicle_type=vehicle_types[i])
+            start_pos = None
+            dest_pos = None
+            
+            if use_gps and origin_zones and dest_zones:
+                # Sélectionner une zone d'origine pondérée
+                weights = [z['weight'] for z in origin_zones]
+                selected_origin = random.choices(origin_zones, weights=weights)[0]
+                bbox = selected_origin['bbox']
+                start_pos = (random.uniform(bbox[0], bbox[2]), random.uniform(bbox[1], bbox[3]))
+                
+                # Sélectionner une zone de destination pondérée
+                weights = [z['weight'] for z in dest_zones]
+                selected_dest = random.choices(dest_zones, weights=weights)[0]
+                bbox = selected_dest['bbox']
+                dest_pos = (random.uniform(bbox[0], bbox[2]), random.uniform(bbox[1], bbox[3]))
+            
+            self._create_vehicle(f"vehicle_{i}", vehicle_type=vehicle_types[i],
+                                start_pos=start_pos, dest_pos=dest_pos, use_gps_coords=use_gps)
         
         # Compter par type
         from collections import Counter
