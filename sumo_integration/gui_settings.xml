@@ -12,8 +12,8 @@
                 <entry color="0,0,0" name="road"/>
             </colorScheme>
         </edges>
-        <vehicles vehicleMode="0" vehicleQuality="2" vehicle_minSize="2.00"
-                  vehicle_exaggeration="1.50" showBlinker="1"
+        <vehicles vehicleMode="0" vehicleQuality="2" vehicle_minSize="10.00"
+                  vehicle_exaggeration="5.00" showBlinker="1"
                   vehicleName_show="0" vehicleName_size="50.00" vehicleName_color="204,153,0">
             <colorScheme name="given vehicle/type/route color">
                 <entry color="yellow"/>

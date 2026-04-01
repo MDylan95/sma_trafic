@@ -18,14 +18,21 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 # Chemin vers les outils SUMO
-SUMO_TOOLS = Path(r"C:\Program Files (x86)\Eclipse\Sumo\tools")
+DEFAULT_SUMO_HOME = "/usr/share/sumo"
+SUMO_HOME = Path(os.environ.get("SUMO_HOME", DEFAULT_SUMO_HOME))
+SUMO_TOOLS = SUMO_HOME / "tools"
+if not SUMO_TOOLS.exists():
+    raise RuntimeError(
+        "Les outils SUMO sont introuvables. Définissez la variable d'environnement SUMO_HOME"
+        " (ex: export SUMO_HOME=/usr/share/sumo) avant de lancer ce script."
+    )
 
 # ---------------------------------------------------------------------------
 # Coordonnées GPS de la zone d'Abidjan pertinente pour le projet
 # Format osmGet.py : west,south,east,north  (lon_min,lat_min,lon_max,lat_max)
-# Zone réduite centrée sur Plateau + ponts pour éviter timeouts (fichier ~5 Mo)
+# Zone étendue couvrant Yopougon, Abobo, Cocody et les ponts majeurs
 # ---------------------------------------------------------------------------
-BBOX_STR = "-4.050,5.310,-3.970,5.380"  # Plateau + Pont De Gaulle + Pont HKB
+BBOX_STR = "-4.200,5.250,-3.850,5.500"  # west,south,east,north
 
 SCRIPT_DIR  = Path(__file__).parent.resolve()
 OSM_FILE    = SCRIPT_DIR / "abidjan_real.osm.xml"
@@ -254,7 +261,7 @@ def generate_sumocfg(pdg_edges, hkb_edges):
     pdg_list   = repr(pdg_edges)
     hkb_list   = repr(hkb_edges)
     constants  = f'''"""
-Constantes du réseau réel d\'Abidjan (généré automatiquement par import_real_abidjan.py).
+Constantes du réseau réel d'Abidjan (généré automatiquement par import_real_abidjan.py).
 Utilisées par sumo_connector.py et incident.py.
 """
 
@@ -270,9 +277,10 @@ PONT_DE_GAULLE_EDGES = {pdg_list}
 PONT_HKB_EDGES = {hkb_list}
 
 # Zones géographiques (bbox en coordonnées GPS)
-BBOX_YOPOUGON  = (-4.070, 5.320, -4.010, 5.380)   # origine flux heure de pointe
-BBOX_PLATEAU   = (-4.020, 5.300, -3.970, 5.360)   # zone centrale / CBD
-BBOX_COCODY    = (-3.990, 5.330, -3.950, 5.420)   # destination flux heure de pointe
+BBOX_YOPOUGON  = (-4.080, 5.310, -4.000, 5.380)   # Ouest
+BBOX_ABOBO     = (-4.000, 5.370, -3.900, 5.480)   # Nord
+BBOX_PLATEAU   = (-4.030, 5.295, -3.985, 5.335)   # Centre
+BBOX_COCODY    = (-3.985, 5.330, -3.910, 5.430)   # Est
 '''
     const_file.write_text(constants, encoding="utf-8")
 

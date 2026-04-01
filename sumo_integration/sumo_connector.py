@@ -10,6 +10,7 @@ import sys
 import subprocess
 import time
 import random
+import math
 from typing import Dict, List, Optional, Tuple
 from loguru import logger
 
@@ -83,6 +84,11 @@ class SumoConnector:
         self._last_tls_states: Dict[str, str] = {}
         self._tls_link_directions: Dict[str, list] = {}
 
+        # Projection UTM: netOffset et zone (extraits au chargement du réseau)
+        self._net_offset_x: float = 0.0
+        self._net_offset_y: float = 0.0
+        self._utm_zone: int = 30  # Zone UTM par défaut pour Abidjan
+
         # État du blocage incident (maintenu à chaque step)
         self._incident_active: bool = False
         self._blocked_bridge_edges: List[str] = []
@@ -125,6 +131,8 @@ class SumoConnector:
             net_file = self.sumocfg_path.replace(".sumocfg", ".net.xml")
             if os.path.exists(net_file):
                 self._net = sumolib.net.readNet(net_file)
+                # Extraire le netOffset pour la conversion GPS → coordonnées SUMO
+                self._extract_net_offset(net_file)
             
             # Récupérer les arêtes et feux
             self._edge_list = traci.edge.getIDList()
@@ -303,11 +311,15 @@ class SumoConnector:
                 if orig == dest:
                     continue
                 try:
-                    route = traci.simulation.findRoute(orig, dest)
-                    if route.edges and len(route.edges) >= 2:
-                        self._valid_od_pairs.append((orig, dest, list(route.edges)))
-                        valid_count += 1
-                except traci.exceptions.TraCIException:
+                    if self._net:
+                        from_edge = self._net.getEdge(orig)
+                        to_edge = self._net.getEdge(dest)
+                        path, cost = self._net.getShortestPath(from_edge, to_edge)
+                        if path and len(path) >= 2:
+                            route_edges = [e.getID() for e in path]
+                            self._valid_od_pairs.append((orig, dest, route_edges))
+                            valid_count += 1
+                except Exception:
                     pass
                 tested += 1
                 if valid_count >= 200:
@@ -330,54 +342,97 @@ class SumoConnector:
             logger.warning("⚠️ Connexion SUMO perdue")
             self.connected = False
     
+    # ============ CONVERSION GPS → SUMO ============
+
+    def _extract_net_offset(self, net_file: str):
+        """Extrait netOffset et projParameter du fichier .net.xml."""
+        import xml.etree.ElementTree as ET
+        try:
+            tree = ET.parse(net_file)
+            for loc in tree.getroot().findall('.//location'):
+                offset_str = loc.get('netOffset', '0.0,0.0')
+                parts = offset_str.split(',')
+                self._net_offset_x = float(parts[0])
+                self._net_offset_y = float(parts[1])
+                proj = loc.get('projParameter', '')
+                # Extraire la zone UTM si disponible
+                if '+zone=' in proj:
+                    zone_str = proj.split('+zone=')[1].split()[0]
+                    self._utm_zone = int(zone_str)
+                logger.info(
+                    f"🗺️  netOffset=({self._net_offset_x:.2f}, {self._net_offset_y:.2f}), UTM zone={self._utm_zone}"
+                )
+        except Exception as e:
+            logger.warning(f"⚠️ Impossible d'extraire netOffset: {e}")
+
+    def _lonlat_to_xy(self, lon: float, lat: float) -> Tuple[float, float]:
+        """Convertit des coordonnées GPS (lon, lat) en coordonnées SUMO (x, y) via projection UTM."""
+        a = 6378137.0  # WGS84 semi-major axis
+        f = 1 / 298.257223563
+        e2 = 2 * f - f * f
+        lon0 = (self._utm_zone - 1) * 6 - 180 + 3  # méridien central de la zone UTM
+
+        lat_rad = math.radians(lat)
+        lon_rad = math.radians(lon)
+        lon0_rad = math.radians(lon0)
+
+        N = a / math.sqrt(1 - e2 * math.sin(lat_rad) ** 2)
+        T = math.tan(lat_rad) ** 2
+        C = (e2 / (1 - e2)) * math.cos(lat_rad) ** 2
+        A = (lon_rad - lon0_rad) * math.cos(lat_rad)
+
+        M = a * (
+            (1 - e2 / 4 - 3 * e2 ** 2 / 64 - 5 * e2 ** 3 / 256) * lat_rad
+            - (3 * e2 / 8 + 3 * e2 ** 2 / 32 + 45 * e2 ** 3 / 1024) * math.sin(2 * lat_rad)
+            + (15 * e2 ** 2 / 256 + 45 * e2 ** 3 / 1024) * math.sin(4 * lat_rad)
+            - (35 * e2 ** 3 / 3072) * math.sin(6 * lat_rad)
+        )
+
+        k0 = 0.9996
+        ep2 = e2 / (1 - e2)
+        x_utm = k0 * N * (
+            A + (1 - T + C) * A ** 3 / 6
+            + (5 - 18 * T + T ** 2 + 72 * C - 58 * ep2) * A ** 5 / 120
+        ) + 500000
+        y_utm = k0 * (
+            M + N * math.tan(lat_rad) * (
+                A ** 2 / 2
+                + (5 - T + 9 * C + 4 * C ** 2) * A ** 4 / 24
+                + (61 - 58 * T + T ** 2 + 600 * C - 330 * ep2) * A ** 6 / 720
+            )
+        )
+
+        return x_utm + self._net_offset_x, y_utm + self._net_offset_y
+
     # ============ GESTION DES VÉHICULES ============
     
-    def find_edge_near_coords(self, lon: float, lat: float, radius: float = 2000.0) -> Optional[str]:
-        """
-        Trouve l'edge SUMO le plus proche d'une coordonnée GPS (lon, lat).
-        
-        Args:
-            lon: Longitude GPS
-            lat: Latitude GPS
-            radius: Rayon de recherche en mètres (défaut: 2000m)
-        
-        Returns:
-            ID de l'edge le plus proche, ou None si aucun trouvé
-        """
-        if not self.connected:
+    def find_edge_near_coords(self, lon: float, lat: float, radius: float = 500.0) -> Optional[str]:
+        """Trouve l'edge SUMO le plus proche d'une coordonnée GPS (lon, lat)."""
+        if not self.connected or self._net is None:
             return None
         
         try:
-            # Convertir GPS (lon, lat) en coordonnées SUMO (x, y)
-            x, y = traci.simulation.convertGeo(lon, lat)
-            
-            # Trouver l'edge le plus proche
-            edges = traci.edge.getIDList()
-            min_dist = float('inf')
-            closest_edge = None
-            
-            for edge_id in edges:
-                # Obtenir la forme (shape) de l'edge
-                shape = traci.edge.getShape(edge_id)
-                if not shape:
-                    continue
-                
-                # Calculer la distance minimale à tous les points de l'edge
-                for edge_x, edge_y in shape:
-                    dist = ((x - edge_x)**2 + (y - edge_y)**2)**0.5
-                    
-                    if dist < min_dist:
-                        min_dist = dist
-                        closest_edge = edge_id
-            
-            # Retourner seulement si dans le rayon
-            if min_dist <= radius:
-                return closest_edge
-            
-            logger.debug(f"Aucun edge trouvé près de ({lon:.4f}, {lat:.4f}) dans un rayon de {radius}m (plus proche: {min_dist:.1f}m)")
+            x, y = self._lonlat_to_xy(lon, lat)
+
+            search_radii = [radius, radius * 2, radius * 4]
+            for current_radius in search_radii:
+                try:
+                    neighbors = self._net.getNeighboringEdges(x, y, current_radius)
+                    if neighbors:
+                        neighbors.sort(key=lambda item: item[1])
+                        edge, dist = neighbors[0]
+                        logger.debug(
+                            f"Edge trouvé via sumolib pour ({lon:.4f}, {lat:.4f}) à {dist:.1f}m (rayon {current_radius}m)"
+                        )
+                        return edge.getID()
+                except Exception as exc:
+                    logger.debug(f"getNeighboringEdges a échoué pour ({lon}, {lat}) [r={current_radius}]: {exc}")
+
+            logger.debug(
+                f"Aucun edge sumolib trouvé près de ({lon:.4f}, {lat:.4f}) après {search_radii[-1]}m"
+            )
             return None
-            
-        except (traci.exceptions.TraCIException, Exception) as e:
+        except Exception as e:
             logger.debug(f"Erreur find_edge_near_coords({lon}, {lat}): {e}")
             return None
     
@@ -407,30 +462,38 @@ class SumoConnector:
         route_id = f"route_{sumo_veh_id}"
         
         try:
+            use_fallback_route = False
             # Si coordonnées GPS fournies, trouver les edges correspondants
             if origin_coords is not None and origin_edge is None:
                 lon, lat = origin_coords
                 origin_edge = self.find_edge_near_coords(lon, lat)
                 if origin_edge is None:
-                    logger.debug(f"Aucun edge trouvé près de ({lon}, {lat})")
-                    return False
+                    logger.debug(f"Aucun edge trouvé près de ({lon}, {lat}) — fallback route")
+                    use_fallback_route = True
             
             if dest_coords is not None and dest_edge is None:
                 lon, lat = dest_coords
                 dest_edge = self.find_edge_near_coords(lon, lat)
                 if dest_edge is None:
-                    logger.debug(f"Aucun edge trouvé près de ({lon}, {lat})")
-                    return False
+                    logger.debug(f"Aucun edge trouvé près de ({lon}, {lat}) — fallback route")
+                    use_fallback_route = True
             
             # Méthode 1 : Utiliser les edges fournis ou trouvés
-            if origin_edge and dest_edge:
-                route = traci.simulation.findRoute(origin_edge, dest_edge)
-                if route.edges and len(route.edges) >= 2:
-                    traci.route.add(route_id, list(route.edges))
-                    traci.vehicle.add(sumo_veh_id, route_id, typeID=vehicle_type)
-                    self.mesa_to_sumo_vehicles[mesa_vehicle_id] = sumo_veh_id
-                    self.vehicles_added += 1
-                    return True
+            if not use_fallback_route and origin_edge and dest_edge:
+                if self._net:
+                    from_edge = self._net.getEdge(origin_edge)
+                    to_edge = self._net.getEdge(dest_edge)
+                    path, cost = self._net.getShortestPath(from_edge, to_edge)
+                    if path and len(path) >= 2:
+                        route_edges = [e.getID() for e in path]
+                        traci.route.add(route_id, route_edges)
+                        traci.vehicle.add(sumo_veh_id, route_id, typeID=vehicle_type)
+                        self.mesa_to_sumo_vehicles[mesa_vehicle_id] = sumo_veh_id
+                        self.vehicles_added += 1
+                        logger.debug(
+                            f"➕ Véhicule {sumo_veh_id} ajouté avec edges GPS {origin_edge} → {dest_edge} (type={vehicle_type})"
+                        )
+                        return True
             
             # Méthode 2 : Utiliser une paire O/D pré-calculée (fallback)
             if self._valid_od_pairs:
@@ -440,6 +503,9 @@ class SumoConnector:
                 traci.vehicle.add(sumo_veh_id, route_id, typeID=vehicle_type)
                 self.mesa_to_sumo_vehicles[mesa_vehicle_id] = sumo_veh_id
                 self.vehicles_added += 1
+                logger.debug(
+                    f"➕ Véhicule {sumo_veh_id} ajouté via paire O/D pré-calculée {origin} → {dest} (type={vehicle_type})"
+                )
                 return True
             
             # Méthode 3 : Trouver une route aléatoire
@@ -451,18 +517,25 @@ class SumoConnector:
                     candidates = [e for e in self._normal_edges if e != origin_edge]
                 dest_edge = random.choice(candidates)
             
-            route = traci.simulation.findRoute(origin_edge, dest_edge)
-            if route.edges and len(route.edges) >= 2:
-                traci.route.add(route_id, list(route.edges))
-                traci.vehicle.add(sumo_veh_id, route_id, typeID=vehicle_type)
-                self.mesa_to_sumo_vehicles[mesa_vehicle_id] = sumo_veh_id
-                self.vehicles_added += 1
-                return True
+            if self._net:
+                from_edge = self._net.getEdge(origin_edge)
+                to_edge = self._net.getEdge(dest_edge)
+                path, cost = self._net.getShortestPath(from_edge, to_edge)
+                if path and len(path) >= 2:
+                    route_edges = [e.getID() for e in path]
+                    traci.route.add(route_id, route_edges)
+                    traci.vehicle.add(sumo_veh_id, route_id, typeID=vehicle_type)
+                    self.mesa_to_sumo_vehicles[mesa_vehicle_id] = sumo_veh_id
+                    self.vehicles_added += 1
+                    logger.debug(
+                        f"➕ Véhicule {sumo_veh_id} ajouté via route aléatoire {origin_edge} → {dest_edge} (type={vehicle_type})"
+                    )
+                    return True
             
             return False
             
         except traci.exceptions.TraCIException as e:
-            logger.debug(f"Impossible d'ajouter {sumo_veh_id}: {e}")
+            logger.debug(f"❌ Impossible d'ajouter {sumo_veh_id}: {e}")
             return False
     
     def remove_vehicle(self, mesa_vehicle_id: str):
@@ -656,17 +729,17 @@ class SumoConnector:
                 {
                     'name': 'Yopougon',
                     'bbox': BBOX_YOPOUGON,
-                    'color': (100, 150, 255, 80),  # Bleu clair (origine)
+                    'color': (100, 150, 255, 255),  # Bleu (contour)
                 },
                 {
                     'name': 'Abobo',
                     'bbox': BBOX_ABOBO,
-                    'color': (150, 100, 255, 80),  # Violet clair (origine)
+                    'color': (150, 100, 255, 255),  # Violet (contour)
                 },
                 {
                     'name': 'Plateau',
                     'bbox': BBOX_PLATEAU,
-                    'color': (255, 100, 100, 80),  # Rouge clair (destination)
+                    'color': (255, 100, 100, 255),  # Rouge (contour)
                 }
             ]
             
@@ -698,9 +771,9 @@ class SumoConnector:
                         polygonID=poly_id,
                         shape=shape,
                         color=zone['color'],
-                        fill=True,
+                        fill=False,
                         polygonType="zone",
-                        layer=100
+                        layer=5  # couche basse pour laisser véhicules et routes visibles
                     )
                     
                     # Ajouter un POI (label) au centre

@@ -47,13 +47,14 @@ data/logs/
 *.sqlite
 *.sqlite3
 
-# SUMO
-*.sumocfg.xml
-*.rou.xml
-*.trips.xml
+# SUMO — fichiers générés volumineux
+sumo_integration/abidjan_real.net.xml
+sumo_integration/abidjan_real.osm.xml
+sumo_integration/*.osm.pbf
 sumo_output/
 *.fcd.xml
 *.emission.xml
+*.trips.xml
 
 # Temporary files
 *.tmp

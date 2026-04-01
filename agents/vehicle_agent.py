@@ -174,7 +174,13 @@ class VehicleAgent(BDIAgent):
     def _is_at_destination(self) -> bool:
         """Vérifie si le véhicule est arrivé à destination"""
         distance = self._calculate_distance(self.position, self.destination)
-        return distance < 10.0  # Seuil de 10 mètres
+        
+        # Si la position est en GPS (degrés), 10.0 degrés représentent des milliers de kilomètres.
+        # Un seuil de 10 mètres correspond à environ 0.0001 degré.
+        if abs(self.position[0]) < 10.0 and abs(self.position[1]) < 10.0:  # Coordonnées GPS probables (Abidjan est autour de -4, 5)
+            return distance < 0.0005  # Environ 50 mètres
+        else:
+            return distance < 10.0  # Seuil classique pour coordonnées planaires (mètres)
     
     # ============ DELIBERATION ============
     

@@ -12,12 +12,13 @@ REAL_ROUTES     = "routes_real.rou.xml"
 PONT_DE_GAULLE_EDGES = ['307221092', '333112567']
 
 # Edges du Pont HKB Félix Houphouët-Boigny (route alternative)
-PONT_HKB_EDGES = ['1135493394#0', '118814739#0', '147061723#3', '22703950', '22703950-AddedOffRampEdge', '295474302', '295474302-AddedOnRampEdge', '30656596', '326163564#0', '326249232#2', '366285686#0', '366285687', '392464982', '392464983', '392474803#0', '392474803#1', '392474808', '392474812#0', '392474816#0', '392474816#4', '392474819#0', '392474819#2', '392475751', '397685898#0', '397722081', '397722082#0', '397722082#2', '404096045', '404096053', '404096055', '404096060', '404096064#0', '404105137', '404105143#0', '404105148#0', '404105148#1', '737719599#0', '766696517#0']
+PONT_HKB_EDGES = ['-1134018274#0', '-1134018274#1', '-1134018274#2', '-1134019376', '-1134019377#0', '-294636279#0', '22703950', '295474302', '30656596']
 
-# Zones géographiques (bbox en coordonnées GPS)
-# Format: (lon_min, lat_min, lon_max, lat_max)
-# BBOX recalibrées pour correspondre aux limites réelles du réseau OSM importé
-BBOX_YOPOUGON  = (-4.0595, 5.3450, -4.0114, 5.3634)   # Ouest - origine flux heure de pointe
-BBOX_ABOBO     = (-4.0500, 5.3634, -3.9500, 5.3909)   # Nord - origine flux heure de pointe
-BBOX_PLATEAU   = (-4.0400, 5.2991, -3.9800, 5.3450)   # Sud/Centre - zone d'affaires (CBD)
-BBOX_COCODY    = (-3.9900, 5.3300, -3.9500, 5.3909)   # Est - destination alternative
+# ---------------------------------------------------------------------------
+# Zones géographiques (bbox en coordonnées GPS : lon_min, lat_min, lon_max, lat_max)
+# origBoundary du réseau : -4.074043,5.283383,-3.923975,5.441035
+# ---------------------------------------------------------------------------
+BBOX_YOPOUGON  = (-4.074, 5.310, -4.000, 5.380)   # Ouest
+BBOX_ABOBO     = (-4.000, 5.370, -3.924, 5.440)   # Nord
+BBOX_PLATEAU   = (-4.030, 5.295, -3.985, 5.335)   # Centre
+BBOX_COCODY    = (-3.985, 5.330, -3.924, 5.430)   # Est

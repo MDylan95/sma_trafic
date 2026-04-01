@@ -151,9 +151,6 @@ class TrafficModel(Model):
             self.incident_scenario.setup()
             logger.info(f"📋 Scénario 'Incident Pont De Gaulle' initialisé")
         
-        # Créer les véhicules initiaux
-        self._create_initial_vehicles()
-        
         # Lancer SUMO si demandé
         if self.use_sumo:
             try:
@@ -174,6 +171,9 @@ class TrafficModel(Model):
                 logger.warning(f"⚠️ Impossible de lancer SUMO: {e}")
                 self.sumo_connector = None
                 self.use_sumo = False
+                
+        # Créer les véhicules initiaux (APRÈS l'initialisation de SUMO)
+        self._create_initial_vehicles()
         
         # Collecteur de données
         self.datacollector = DataCollector(
@@ -282,12 +282,18 @@ class TrafficModel(Model):
                 selected_origin = random.choices(origin_zones, weights=weights)[0]
                 bbox = selected_origin['bbox']
                 start_pos = (random.uniform(bbox[0], bbox[2]), random.uniform(bbox[1], bbox[3]))
+                logger.debug(
+                    f"Origine GPS {selected_origin['name']} -> {start_pos[0]:.4f}, {start_pos[1]:.4f}"
+                )
                 
                 # Sélectionner une zone de destination pondérée
                 weights = [z['weight'] for z in dest_zones]
                 selected_dest = random.choices(dest_zones, weights=weights)[0]
                 bbox = selected_dest['bbox']
                 dest_pos = (random.uniform(bbox[0], bbox[2]), random.uniform(bbox[1], bbox[3]))
+                logger.debug(
+                    f"Destination GPS {selected_dest['name']} -> {dest_pos[0]:.4f}, {dest_pos[1]:.4f}"
+                )
             
             self._create_vehicle(f"vehicle_{i}", vehicle_type=vehicle_types[i],
                                 start_pos=start_pos, dest_pos=dest_pos, use_gps_coords=use_gps)
