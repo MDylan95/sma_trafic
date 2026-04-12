@@ -11,6 +11,7 @@ import subprocess
 import time
 import random
 import math
+import numpy as np
 from typing import Dict, List, Optional, Tuple
 from loguru import logger
 
@@ -89,6 +90,16 @@ class SumoConnector:
         self._net_offset_y: float = 0.0
         self._utm_zone: int = 30  # Zone UTM par défaut pour Abidjan
 
+        # Cache des shapes d'edges pour recherche spatiale rapide
+        # Construit une seule fois au démarrage via _build_edge_shape_cache()
+        self._edge_shape_cache: Dict[str, Tuple[float, float]] = {}
+        # KD-Tree pour recherche O(log n) au lieu de O(n)
+        self._kdtree = None
+        self._kdtree_edge_ids: List[str] = []
+
+        # Guard : zones géographiques déjà visualisées ?
+        self._zones_visualized: bool = False
+
         # État du blocage incident (maintenu à chaque step)
         self._incident_active: bool = False
         self._blocked_bridge_edges: List[str] = []
@@ -127,12 +138,11 @@ class SumoConnector:
             traci.start(sumo_cmd, port=self.port)
             self.connected = True
             
-            # Charger le réseau
+            # Extraire le netOffset pour la conversion GPS → coordonnées SUMO (lecture XML légère)
             net_file = self.sumocfg_path.replace(".sumocfg", ".net.xml")
             if os.path.exists(net_file):
-                self._net = sumolib.net.readNet(net_file)
-                # Extraire le netOffset pour la conversion GPS → coordonnées SUMO
                 self._extract_net_offset(net_file)
+            # Note: sumolib.net.readNet supprimé (415 Mo inutile — remplacé par TraCI)
             
             # Récupérer les arêtes et feux
             self._edge_list = traci.edge.getIDList()
@@ -142,6 +152,9 @@ class SumoConnector:
             self._normal_edges = [e for e in self._edge_list if not e.startswith(":")]
             self._source_edges = [e for e in self._normal_edges if "src_" in e]
             
+            # Construire le cache spatial des edges (pour find_edge_near_coords)
+            self._build_edge_shape_cache()
+
             # Pré-calculer des paires origine/destination valides
             self._valid_od_pairs = []
             self._precompute_valid_routes()
@@ -169,7 +182,7 @@ class SumoConnector:
         Pour chaque TLS SUMO, on trouve l'intersection Mesa dont la position normalisée
         est la plus proche. Cela évite les erreurs dues à un ordre d'index non garanti.
         """
-        if not self._net:
+        if True:
             # Fallback par index si le réseau n'est pas chargé
             for i, tls_id in enumerate(self._tls_ids):
                 mesa_id = f"intersection_{i}"
@@ -180,9 +193,8 @@ class SumoConnector:
         tls_positions = {}
         for tls_id in self._tls_ids:
             try:
-                node = self._net.getNode(tls_id)
-                if node:
-                    tls_positions[tls_id] = node.getCoord()  # (x, y) en mètres SUMO
+                pos = traci.junction.getPosition(tls_id)  # (x, y) en mètres SUMO
+                tls_positions[tls_id] = pos
             except Exception:
                 pass
 
@@ -264,11 +276,13 @@ class SumoConnector:
             traci.gui.setSchema(view_id, "real world")
 
             # Centrer sur le réseau — getBBoxXY() retourne ((xmin,ymin),(xmax,ymax))
-            if self._net:
-                bounds = self._net.getBBoxXY()
+            try:
+                bounds = traci.simulation.getNetBoundary()  # ((xmin,ymin),(xmax,ymax))
                 center_x = (bounds[0][0] + bounds[1][0]) / 2.0
                 center_y = (bounds[0][1] + bounds[1][1]) / 2.0
                 traci.gui.setOffset(view_id, center_x, center_y)
+            except Exception:
+                pass
 
             # Zoom suffisant pour voir les link decals (feux)
             traci.gui.setZoom(view_id, 2000)
@@ -282,28 +296,36 @@ class SumoConnector:
     def _precompute_valid_routes(self):
         """
         Pré-calcule des paires origine/destination avec routes valides.
-        Utilise traci.simulation.findRoute() pour vérifier la connectivité.
+        Cache disque : 1ère exécution ~90s, suivantes ~0.1s.
         """
-        # Pour réseau grille : chercher edges source spécifiques
+        import pickle
+        od_cache_file = os.path.join(os.path.dirname(self.sumocfg_path), "od_pairs_cache.pkl")
+
+        # --- Charger depuis le cache disque ---
+        if os.path.exists(od_cache_file):
+            try:
+                with open(od_cache_file, "rb") as f:
+                    self._valid_od_pairs = pickle.load(f)
+                logger.info(f"   ✅ {len(self._valid_od_pairs)} paires O/D chargées depuis cache disque")
+                return
+            except Exception as e:
+                logger.warning(f"⚠️ Cache O/D corrompu, reconstruction... ({e})")
+
+        # --- Construire depuis TraCI ---
         inbound_edges = [e for e in self._source_edges if e.startswith("e_src_") and "_to_n" in e]
         outbound_edges = [e for e in self._source_edges if e.startswith("e_n") and "_to_src_" in e]
-        
+
         if not inbound_edges or not outbound_edges:
-            # Pour réseau OSM réel : utiliser échantillon aléatoire d'edges normales
             if len(self._normal_edges) > 100:
-                # Échantillonner 50 edges aléatoires comme origines et 50 comme destinations
-                import random
                 sample_size = min(50, len(self._normal_edges) // 4)
                 all_edges_sample = random.sample(self._normal_edges, min(sample_size * 2, len(self._normal_edges)))
                 inbound_edges = all_edges_sample[:sample_size]
                 outbound_edges = all_edges_sample[sample_size:sample_size*2]
                 logger.info(f"🗺️  Réseau OSM détecté : échantillonnage de {sample_size} origines et {sample_size} destinations")
             else:
-                # Petit réseau : utiliser toutes les edges
                 inbound_edges = self._normal_edges[:len(self._normal_edges)//2]
                 outbound_edges = self._normal_edges[len(self._normal_edges)//2:]
-        
-        # Tester des paires et garder celles qui ont une route valide
+
         tested = 0
         valid_count = 0
         for orig in inbound_edges:
@@ -311,22 +333,27 @@ class SumoConnector:
                 if orig == dest:
                     continue
                 try:
-                    if self._net:
-                        from_edge = self._net.getEdge(orig)
-                        to_edge = self._net.getEdge(dest)
-                        path, cost = self._net.getShortestPath(from_edge, to_edge)
-                        if path and len(path) >= 2:
-                            route_edges = [e.getID() for e in path]
-                            self._valid_od_pairs.append((orig, dest, route_edges))
-                            valid_count += 1
+                    route_result = traci.simulation.findRoute(orig, dest)
+                    if route_result and route_result.edges and len(route_result.edges) >= 2:
+                        self._valid_od_pairs.append((orig, dest, list(route_result.edges)))
+                        valid_count += 1
                 except Exception:
                     pass
                 tested += 1
                 if valid_count >= 200:
-                    logger.info(f"   ✅ {valid_count} paires O/D valides trouvées (testé {tested} combinaisons)")
-                    return
-        
-        logger.info(f"   Testé {tested} paires, {valid_count} valides")
+                    break
+            if valid_count >= 200:
+                break
+
+        logger.info(f"   ✅ {valid_count} paires O/D valides trouvées (testé {tested} combinaisons)")
+
+        # Sauvegarder sur disque
+        try:
+            with open(od_cache_file, "wb") as f:
+                pickle.dump(self._valid_od_pairs, f)
+            logger.info(f"   💾 Cache O/D sauvegardé : {od_cache_file}")
+        except Exception as e:
+            logger.warning(f"⚠️ Impossible de sauvegarder le cache O/D: {e}")
     
     def step(self):
         """Avance la simulation SUMO d'un pas"""
@@ -407,34 +434,137 @@ class SumoConnector:
     # ============ GESTION DES VÉHICULES ============
     
     def find_edge_near_coords(self, lon: float, lat: float, radius: float = 500.0) -> Optional[str]:
-        """Trouve l'edge SUMO le plus proche d'une coordonnée GPS (lon, lat)."""
-        if not self.connected or self._net is None:
+        """Trouve l'edge SUMO le plus proche d'une coordonnée GPS (lon, lat).
+
+        Stratégie en 3 niveaux :
+        1. traci.simulation.convertGeo → XY, puis recherche manuelle parmi les edges du réseau
+        2. Projection UTM manuelle (_lonlat_to_xy) + recherche manuelle (fallback)
+        3. sumolib.getNeighboringEdges (ancien code, gardé en dernier recours)
+        """
+        if not self.connected:
             return None
-        
+
+        # --- Niveau 1 : conversion via TraCI (la plus fiable) ---
         try:
-            x, y = self._lonlat_to_xy(lon, lat)
+            x, y = traci.simulation.convertGeo(lon, lat, fromGeo=True)
+            edge_id = self._find_nearest_edge_xy(x, y, radius)
+            if edge_id:
+                logger.debug(
+                    f"Edge trouvé via TraCI convertGeo pour ({lon:.4f}, {lat:.4f}) → edge {edge_id}"
+                )
+                return edge_id
+        except Exception as exc:
+            logger.debug(f"Niveau 1 (TraCI convertGeo) échoué pour ({lon}, {lat}): {exc}")
 
-            search_radii = [radius, radius * 2, radius * 4]
-            for current_radius in search_radii:
-                try:
-                    neighbors = self._net.getNeighboringEdges(x, y, current_radius)
-                    if neighbors:
-                        neighbors.sort(key=lambda item: item[1])
-                        edge, dist = neighbors[0]
-                        logger.debug(
-                            f"Edge trouvé via sumolib pour ({lon:.4f}, {lat:.4f}) à {dist:.1f}m (rayon {current_radius}m)"
-                        )
-                        return edge.getID()
-                except Exception as exc:
-                    logger.debug(f"getNeighboringEdges a échoué pour ({lon}, {lat}) [r={current_radius}]: {exc}")
+        # --- Niveau 2 : KD-Tree sans limite de rayon (edge le plus proche absolu) ---
+        try:
+            x, y = traci.simulation.convertGeo(lon, lat, fromGeo=True)
+            edge_id = self._find_nearest_edge_xy(x, y, radius=float('inf'))
+            if edge_id:
+                logger.debug(
+                    f"Edge trouvé via KD-Tree sans limite pour ({lon:.4f}, {lat:.4f}) → edge {edge_id}"
+                )
+                return edge_id
+        except Exception as exc:
+            logger.debug(f"Niveau 2 (KD-Tree sans limite) échoué pour ({lon}, {lat}): {exc}")
 
-            logger.debug(
-                f"Aucun edge sumolib trouvé près de ({lon:.4f}, {lat:.4f}) après {search_radii[-1]}m"
-            )
-            return None
-        except Exception as e:
-            logger.debug(f"Erreur find_edge_near_coords({lon}, {lat}): {e}")
-            return None
+        logger.debug(f"Aucun edge trouvé près de ({lon:.4f}, {lat:.4f})")
+        return None
+
+    def _build_edge_shape_cache(self):
+        """Construit un cache des midpoints d'edges + KD-Tree pour recherche spatiale O(log n).
+
+        1ère exécution : interroge TraCI (~38s) puis sauvegarde sur disque.
+        Exécutions suivantes : charge le cache disque (~1s).
+        """
+        import pickle
+        from scipy.spatial import cKDTree
+
+        cache_file = os.path.join(os.path.dirname(self.sumocfg_path), "edge_kdtree_cache.pkl")
+
+        # --- Essayer de charger le cache disque ---
+        if os.path.exists(cache_file):
+            try:
+                with open(cache_file, "rb") as f:
+                    cached = pickle.load(f)
+                self._edge_shape_cache = cached["cache"]
+                coords_arr = cached["coords"]
+                self._kdtree_edge_ids = cached["ids"]
+                self._kdtree = cKDTree(coords_arr)
+                logger.info(f"🗺️  Cache spatial chargé depuis disque : {len(self._kdtree_edge_ids)} edges, KD-Tree prêt")
+                return
+            except Exception as e:
+                logger.warning(f"⚠️ Cache disque corrompu, reconstruction... ({e})")
+
+        # --- Construire depuis TraCI ---
+        logger.info("🗺️  Construction du cache spatial des edges (1ère fois, ~30s)...")
+        count = 0
+        errors = 0
+        coords_list = []
+        ids_list = []
+        for edge_id in self._normal_edges:
+            try:
+                lane_id = f"{edge_id}_0"
+                shape = traci.lane.getShape(lane_id)
+                if shape:
+                    mx = sum(p[0] for p in shape) / len(shape)
+                    my = sum(p[1] for p in shape) / len(shape)
+                    self._edge_shape_cache[edge_id] = (mx, my)
+                    coords_list.append((mx, my))
+                    ids_list.append(edge_id)
+                    count += 1
+                    continue
+            except Exception:
+                pass
+            try:
+                shape = traci.edge.getShape(edge_id)
+                if shape:
+                    mx = sum(p[0] for p in shape) / len(shape)
+                    my = sum(p[1] for p in shape) / len(shape)
+                    self._edge_shape_cache[edge_id] = (mx, my)
+                    coords_list.append((mx, my))
+                    ids_list.append(edge_id)
+                    count += 1
+                    continue
+            except Exception:
+                pass
+            errors += 1
+
+        if coords_list:
+            coords_arr = np.array(coords_list)
+            self._kdtree = cKDTree(coords_arr)
+            self._kdtree_edge_ids = ids_list
+            # Sauvegarder sur disque pour les prochaines exécutions
+            try:
+                with open(cache_file, "wb") as f:
+                    pickle.dump({"cache": self._edge_shape_cache, "coords": coords_arr, "ids": ids_list}, f)
+                logger.info(f"   💾 Cache sauvegardé : {cache_file}")
+            except Exception as e:
+                logger.warning(f"⚠️ Impossible de sauvegarder le cache disque: {e}")
+
+        logger.info(f"   ✅ Cache spatial: {count} edges indexés ({errors} erreurs), KD-Tree construit")
+
+    def _find_nearest_edge_xy(self, x: float, y: float, radius: float = 500.0) -> Optional[str]:
+        """Trouve l'edge normal le plus proche des coordonnées SUMO (x, y) via KD-Tree.
+
+        Complexité O(log n) au lieu de O(n) grâce au KD-Tree.
+        """
+        if self._kdtree is not None:
+            dist, idx = self._kdtree.query([x, y])
+            if dist <= radius:
+                return self._kdtree_edge_ids[idx]
+
+        # Fallback linéaire si KD-Tree non disponible
+        best_edge = None
+        best_dist_sq = float('inf')
+        for edge_id, (mx, my) in self._edge_shape_cache.items():
+            dist_sq = (x - mx) ** 2 + (y - my) ** 2
+            if dist_sq < best_dist_sq:
+                best_dist_sq = dist_sq
+                best_edge = edge_id
+        if best_edge and best_dist_sq <= radius * radius:
+            return best_edge
+        return None
     
     def add_vehicle(self, mesa_vehicle_id: str, vehicle_type: str = "standard",
                     origin_edge: str = None, dest_edge: str = None,
@@ -480,12 +610,11 @@ class SumoConnector:
             
             # Méthode 1 : Utiliser les edges fournis ou trouvés
             if not use_fallback_route and origin_edge and dest_edge:
-                if self._net:
-                    from_edge = self._net.getEdge(origin_edge)
-                    to_edge = self._net.getEdge(dest_edge)
-                    path, cost = self._net.getShortestPath(from_edge, to_edge)
-                    if path and len(path) >= 2:
-                        route_edges = [e.getID() for e in path]
+                # Utiliser traci.simulation.findRoute (C++ natif, beaucoup plus rapide)
+                try:
+                    route_result = traci.simulation.findRoute(origin_edge, dest_edge)
+                    if route_result and route_result.edges and len(route_result.edges) >= 2:
+                        route_edges = list(route_result.edges)
                         traci.route.add(route_id, route_edges)
                         traci.vehicle.add(sumo_veh_id, route_id, typeID=vehicle_type)
                         self.mesa_to_sumo_vehicles[mesa_vehicle_id] = sumo_veh_id
@@ -494,6 +623,8 @@ class SumoConnector:
                             f"➕ Véhicule {sumo_veh_id} ajouté avec edges GPS {origin_edge} → {dest_edge} (type={vehicle_type})"
                         )
                         return True
+                except Exception:
+                    pass
             
             # Méthode 2 : Utiliser une paire O/D pré-calculée (fallback)
             if self._valid_od_pairs:
@@ -517,12 +648,10 @@ class SumoConnector:
                     candidates = [e for e in self._normal_edges if e != origin_edge]
                 dest_edge = random.choice(candidates)
             
-            if self._net:
-                from_edge = self._net.getEdge(origin_edge)
-                to_edge = self._net.getEdge(dest_edge)
-                path, cost = self._net.getShortestPath(from_edge, to_edge)
-                if path and len(path) >= 2:
-                    route_edges = [e.getID() for e in path]
+            try:
+                route_result = traci.simulation.findRoute(origin_edge, dest_edge)
+                if route_result and route_result.edges and len(route_result.edges) >= 2:
+                    route_edges = list(route_result.edges)
                     traci.route.add(route_id, route_edges)
                     traci.vehicle.add(sumo_veh_id, route_id, typeID=vehicle_type)
                     self.mesa_to_sumo_vehicles[mesa_vehicle_id] = sumo_veh_id
@@ -531,6 +660,8 @@ class SumoConnector:
                         f"➕ Véhicule {sumo_veh_id} ajouté via route aléatoire {origin_edge} → {dest_edge} (type={vehicle_type})"
                     )
                     return True
+            except Exception:
+                pass
             
             return False
             
@@ -721,6 +852,10 @@ class SumoConnector:
         if not self.connected or not self.use_gui:
             logger.debug("Zones géo: SUMO non connecté ou GUI désactivée")
             return
+
+        if self._zones_visualized:
+            logger.debug("Zones géographiques déjà visualisées, appel ignoré")
+            return
         
         try:
             from .real_network_constants import BBOX_YOPOUGON, BBOX_ABOBO, BBOX_PLATEAU
@@ -795,6 +930,7 @@ class SumoConnector:
                     logger.warning(f"   ❌ Erreur zone {zone['name']}: {e}")
                     continue
             
+            self._zones_visualized = True
             logger.info("🗺️  Zones géographiques visualisées: Yopougon=🟦 Bleu, Abobo=🟪 Violet, Plateau=🟥 Rouge")
             logger.info("   💡 Si vous ne voyez pas les zones, zoomez/dézoomez dans SUMO-GUI ou vérifiez View → Show Polygons")
             

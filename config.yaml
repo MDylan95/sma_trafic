@@ -52,25 +52,25 @@ scenarios:
     - name: Yopougon
       weight: 0.5
       bbox:
-      - -4.0595
-      - 5.3450
-      - -4.0114
-      - 5.3634
+      - -4.080
+      - 5.310
+      - -4.000
+      - 5.380
     - name: Abobo
       weight: 0.5
       bbox:
-      - -4.0500
-      - 5.3634
-      - -3.9500
-      - 5.3909
+      - -4.000
+      - 5.370
+      - -3.900
+      - 5.480
     destination_zones:
     - name: Plateau
       weight: 1.0
       bbox:
-      - -4.0400
-      - 5.2991
-      - -3.9800
-      - 5.3450
+      - -4.030
+      - 5.295
+      - -3.985
+      - 5.335
     vehicle_generation_rate: 2.0
     use_real_coords: true
   incident_bridge:

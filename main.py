@@ -40,15 +40,18 @@ def setup_logging(log_level: str = "INFO"):
 def print_banner():
     """Affiche la bannière du projet"""
     banner = """
-    ╔════════════════════════════════════════════════════════════════════╗
-    ║                                                                    ║
-    ║     🚦 SYSTÈME MULTI-AGENT DE RÉGULATION DU TRAFIC 🚦            ║
-    ║                                                                    ║
-    ║     Architecture BDI • Communication FIPA-ACL • Framework Mesa    ║
-    ║                                                                    ║
-    ╚════════════════════════════════════════════════════════════════════╝
+    ================================================================
+    |                                                              |
+    |   SYSTEME MULTI-AGENT DE REGULATION DU TRAFIC                |
+    |                                                              |
+    |   Architecture BDI - Communication FIPA-ACL - Framework Mesa |
+    |                                                              |
+    ================================================================
     """
-    print(banner)
+    try:
+        print(banner)
+    except UnicodeEncodeError:
+        print("=== SYSTEME MULTI-AGENT DE REGULATION DU TRAFIC ===")
 
 
 def parse_arguments():

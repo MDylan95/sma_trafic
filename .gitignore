@@ -56,6 +56,13 @@ sumo_output/
 *.emission.xml
 *.trips.xml
 
+# Caches disque générés automatiquement au 1er lancement
+sumo_integration/edge_kdtree_cache.pkl
+sumo_integration/od_pairs_cache.pkl
+
+# Fichiers de test temporaires
+test_output.txt
+
 # Temporary files
 *.tmp
 *.temp
