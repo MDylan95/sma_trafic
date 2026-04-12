@@ -250,7 +250,7 @@ algorithms:
 
 ## Auteur
 
-**Mac-Dylan KACOU** — [@MDylan95](https://github.com/MDylan95) — macdylankacou2000@gmail.com
+**Mac-Dylan KACOU, BOKA Agny-Blé Romaric** — [@MDylan95](https://github.com/MDylan95) — macdylankacou2000@gmail.com
 
 ---
 
